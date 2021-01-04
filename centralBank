@@ -1,0 +1,147 @@
+pragma solidity ^0.6.0;
+pragma experimental ABIEncoderV2;
+
+contract centralBank
+{
+    address payable ownerAccount;
+    address[] public allSuspects;
+    address[] public allDepositor;
+    address[] public allWithdrawer;
+    uint limit = 10000000000000000000; //10 ether (treshold)
+    uint limit2 = 50000000000000000000; //50 ether (limit for bank money)
+    uint baki; 
+    
+    event transactionDeposit(address payable account, uint amount);
+    event transactionWithdraw(address payable account, uint amount);
+    
+    mapping(address => Suspect) public suspects;
+    struct Suspect
+    {
+        address payable suspect;
+        uint amount;
+    }
+    
+    mapping(address => Depositor) public depositors;
+    struct Depositor
+    {
+        address payable suspect;
+        uint amount;
+    }
+    
+    mapping(address => Withdrawer) public withdrawers;
+    struct Withdrawer
+    {
+        address payable suspect;
+        uint amount;
+    }
+    
+    event addDepositor(address payable depositor, uint amount);
+    event addWithdrawer(address payable withdrawer, uint amount);
+    event addNewSuspect(address payable suspect, uint amount);
+    
+    
+    
+    constructor() public
+    {
+        ownerAccount = msg.sender;
+    }
+    
+    
+    function bankBalance() public view returns(uint)
+    {
+        
+        return baki; 
+    }
+    
+    // This function is to deposit any amount into the bank
+    function deposit () public payable 
+    {
+        if(msg.value < limit)
+        {
+            baki += msg.value;
+            addDepo(msg.sender, msg.value);
+            emit transactionDeposit(msg.sender, msg.value);
+        }
+        else
+        {
+            baki += msg.value;
+            addSuspect(msg.sender, msg.value);
+            addDepo(msg.sender, msg.value);
+            emit transactionDeposit(msg.sender, msg.value);
+        }
+
+    }
+    
+    // This function is to withdraw any amount out of the bank
+    function withdraw(uint _amount) public
+    {
+        if(baki >= _amount)
+        {
+            baki -= _amount;
+            addWithdraw(msg.sender, _amount);
+            msg.sender.transfer(_amount);
+            emit transactionWithdraw(msg.sender, _amount);
+        }
+        else
+        {
+            revert("Balances is sufficient");
+        }
+    
+    }
+    
+    
+    
+    // This function is to add to list the depositors and amount
+    function addDepo(address payable _depositor, uint _amount) internal
+    {
+        uint total = depositors[_depositor].amount + _amount;
+        allDepositor.push(_depositor);
+        depositors[_depositor] = Depositor(_depositor, total);
+        emit addDepositor(_depositor, total);
+    }
+    
+    // This function is to add to list the suspects and amount 
+    function addSuspect(address payable _suspect, uint _amount) internal
+    {
+        uint total = suspects[_suspect].amount + _amount;
+        allSuspects.push(_suspect);
+        suspects[_suspect] = Suspect(_suspect, total);
+        emit addNewSuspect(_suspect, total);
+    }
+    
+    
+    //This function is to add to list the withdrawers
+    function addWithdraw(address payable _withdrawer, uint _amount) internal
+    {
+        uint total = withdrawers[_withdrawer].amount + _amount;
+        allWithdrawer.push(_withdrawer);
+        withdrawers[_withdrawer] = Withdrawer(_withdrawer, total);
+        emit addWithdrawer(_withdrawer, total);
+    }
+    
+    //This function is to list all the suspects
+    function listOfSuspect() public view returns(address[] memory)
+    {
+        return(allSuspects);
+    }
+    
+    //This function is to get the suspect address
+    function getSuspect(address _suspect) public view returns(address, uint)
+    {
+        return (suspects[_suspect].suspect, suspects[_suspect].amount);
+    }
+    
+    //This function is to list all the suspects of Withdrawer n Depositor
+    function getDepositorAndWithdrawer() public view returns(address[] memory, address[] memory)
+    {
+         
+        
+        return(allDepositor, allWithdrawer);
+        
+        
+    }
+    
+    
+    
+    
+}
